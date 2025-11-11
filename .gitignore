@@ -9,3 +9,5 @@ og.*
 
 # Skaffold
 skaffold.env
+
+scripts/
