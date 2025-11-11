@@ -1,0 +1,16 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: swishkube-otel-collector-server
+  namespace: swish-analytics
+spec:
+  secretName: swishkube-otel-collector-server-cert
+  dnsNames:
+    - '127.0.0.1'
+    - 'localhost'
+    - '*.swish-analytics.svc.cluster.local'
+    - '*.swish-analytics.svc.cluster.local'
+  issuerRef:
+    name: swishkube-otel-collector
+    kind: Issuer
+    group: cert-manager.io

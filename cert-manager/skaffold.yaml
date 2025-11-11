@@ -1,0 +1,76 @@
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: cert-manager
+deploy:
+  helm:
+    releases:
+      - name: cert-manager
+        namespace: cert-manager
+        createNamespace: true
+        remoteChart: jetstack/cert-manager
+        version: "1.18.2"
+        wait: true
+        valuesFiles:
+          - values.yaml
+      - name: trust-manager
+        namespace: trust-manager
+        createNamespace: true
+        remoteChart: jetstack/trust-manager
+        version: "0.19.0"
+        wait: true
+        valuesFiles:
+          - trust-manager/values.yaml
+        dependsOn:
+          - cert-manager
+      - name: csi-driver
+        namespace: cert-manager-csi
+        createNamespace: true
+        remoteChart: jetstack/cert-manager-csi-driver
+        version: "0.11.0"
+        wait: true
+        valuesFiles:
+          - csi-driver/values.yaml
+        dependsOn:
+          - cert-manager
+    flags:
+      upgrade:
+        - --install
+    hooks:
+      before:
+        - host:
+            command:
+              - "sh"
+              - "-c"
+              - "helm repo add jetstack https://charts.jetstack.io --force-update"
+            os: [darwin, linux]
+      after:
+        - host:
+            command:
+              - "sh"
+              - "-c"
+              - "kubectl apply -f cluster-issuer.manifest.yaml"
+            os: [darwin, linux]
+        - host:
+            command:
+              - "sh"
+              - "-c"
+              - "kubectl apply -f trust-manager/rbac.manifest.yaml"
+            os: [darwin, linux]
+        - host:
+            command:
+              - "sh"
+              - "-c"
+              - "./create-prev-secret.sh"
+            os: [darwin, linux]
+profiles:
+  - name: csi
+    patches:
+      - op: remove
+        path: /deploy/helm/releases/name=cert-manager
+      - op: remove
+        path: /deploy/helm/releases/name=trust-manager
+      - op: remove
+        path: /deploy/helm/releases/name=csi-driver/dependsOn
+      - op: remove
+        path: /deploy/helm/hooks/after

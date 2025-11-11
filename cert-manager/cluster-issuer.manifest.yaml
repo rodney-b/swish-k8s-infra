@@ -1,0 +1,39 @@
+# Base configuration taken from here: https://cert-manager.io/docs/configuration/selfsigned/#bootstrapping-ca-issuers
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: selfsigned-swishkube-trust-root
+  namespace: trust-manager
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: swishkube-trust-anchor
+  namespace: trust-manager
+spec:
+  isCA: true
+  commonName: identity.root.swishkube.lan
+  secretName: swishkube-trust-anchor
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  duration: 28440h # 3 years and 90 days
+  renewBefore: 26280h # 3 years
+  issuerRef:
+    name: selfsigned-swishkube-trust-root
+    kind: Issuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: swishkube-root-ca
+spec:
+  ca:
+    # `ClusterIssuer` resource is not namespaced, so `secretName` is assumed to reference secret in `trust-manager` namespace.
+    secretName: swishkube-trust-anchor
+
+# Note: Not added to extraObjects in values.yaml because deployment attempts to apply the extraObjects before the CRDs are ready.

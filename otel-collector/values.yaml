@@ -1,0 +1,229 @@
+nameOverride: &name swishkube-otel-collector
+fullnameOverride: *name
+
+image:
+  repository: otel/opentelemetry-collector-contrib
+  tag: "0.131.1"
+
+mode: deployment
+replicaCount: 2
+
+serviceAccount:
+  name: *name
+
+presets:
+  # enables the k8sattributesprocessor and adds it to the traces, metrics, and logs pipelines
+  kubernetesAttributes:
+    enabled: true
+  # Configures the collector to collect host metrics.
+  # Adds the hostmetrics receiver to the metrics pipeline
+  # and adds the necessary volumes and volume mounts.
+  # Best used with mode = daemonset.
+  # See https://opentelemetry.io/docs/kubernetes/collector/components/#host-metrics-receiver for details on the receiver.
+  hostMetrics:
+    enabled: false
+
+  kubeletMetrics:
+    enabled: true
+
+extraEnvsFrom:
+  - secretRef:
+      name: otel-collector-clickhouse-users
+
+config:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+          tls:
+            cert_file: /certs/crt/tls.crt
+            key_file: /certs/key/tls.key
+            # to verify clients (mTLS)
+            client_ca_file: /certs/ca/ca.crt
+            reload_interval: 24h
+        http:
+          endpoint: 0.0.0.0:4318
+          tls:
+            cert_file: /certs/crt/tls.crt
+            key_file: /certs/key/tls.key
+            client_ca_file: /certs/ca/ca.crt
+            reload_interval: 24h
+    prometheus:
+      config:
+        scrape_configs:
+          - job_name: opentelemetry-collector
+            scrape_interval: 10s
+            static_configs:
+              - targets:
+                  - ${env:MY_POD_IP}:8888
+    kubeletstats:
+      collection_interval: 10s
+      auth_type: 'serviceAccount'
+      endpoint: "${env:K8S_NODE_IP}:10250"
+      insecure_skip_verify: true
+      metric_groups:
+        - node
+        - pod
+        - container
+    jaeger: null
+    zipkin: null
+
+  processors:
+    batch:
+      timeout: 2s
+    # Default memory limiter configuration for the collector based on k8s resource limits.
+    memory_limiter:
+      # check_interval is the time between measurements of memory usage.
+      check_interval: 2s
+      # By default limit_mib is set to 80% of ".Values.resources.limits.memory"
+      limit_percentage: 80
+      # By default spike_limit_mib is set to 25% of ".Values.resources.limits.memory"
+      spike_limit_percentage: 25
+
+  exporters:
+    clickhouse:
+      endpoint: clickhouse://clickhouse-swish-analytics.swish-analytics.svc.cluster.local:9000?dial_timeout=10s
+      database: otel
+      username: '${env:CLICKHOUSE_USERNAME}'
+      password: '${env:CLICKHOUSE_PASSWORD}'
+      create_schema: true
+      logs_table_name: logs
+      traces_table_name: traces
+      metrics_tables:
+        gauge: 
+          name: "metrics_gauge"
+        sum: 
+          name: "metrics_sum"
+        summary: 
+          name: "metrics_summary"
+        histogram: 
+          name: "metrics_histogram"
+        exponential_histogram: 
+          name: "metrics_exp_histogram"
+      timeout: 5s
+      retry_on_failure:
+        enabled: true
+        initial_interval: 5s
+        max_interval: 30s
+        max_elapsed_time: 300s
+      ttl: 72h
+      compress: lz4
+
+  service:
+    pipelines:
+      logs:
+        receivers:
+          - otlp
+        processors:
+          - memory_limiter
+          - batch
+        exporters:
+          - clickhouse
+      metrics:
+        receivers:
+          - otlp
+          - prometheus
+          - kubeletstats
+        processors:
+          - memory_limiter
+          - batch
+        exporters:
+          - clickhouse
+      traces: null
+    extensions:
+      - health_check
+    telemetry:
+      metrics:
+        readers:
+          - pull:
+              exporter:
+                prometheus:
+                  host: ${env:MY_POD_IP}
+                  port: 8888
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    memory: 2Gi
+
+podLabels: &podLabels
+  swishkube.observability.otel/component: collector
+
+tolerations:
+  - key: "CriticalAddonsOnly"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+
+nodeSelector:
+  eks.amazonaws.com/nodegroup: bumpow-core-services
+
+topologySpreadConstraints:
+  - topologyKey: kubernetes.io/hostname
+    maxSkew: 1
+    whenUnsatisfiable: "DoNotSchedule"
+    nodeAffinityPolicy: "Honor" 
+    nodeTaintsPolicy: "Honor"
+    labelSelector:
+      matchLabels:
+        <<: *podLabels
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  runAsGroup: 1001
+  fsGroup: 1001
+  fsGroupChangePolicy: OnRootMismatch
+
+securityContext:
+  privileged: false
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  seccompProfile:
+    type: RuntimeDefault
+
+# Notes
+# Using 3 volumes rather than one with subPath because
+# "A container using a Secret as a subPath volume mount will not receive Secret updates."
+# Ref: https://kubernetes.io/docs/concepts/storage/volumes/#secret
+
+# This also supports template content, which will eventually be converted to yaml.
+extraVolumes:
+  - name: &tlsCrt tls-crt
+    secret:
+      secretName: swishkube-otel-collector-server-cert
+      optional: false
+      items:
+        - key: tls.crt
+          path: tls.crt
+  - name: &tlsKey tls-key
+    secret:
+      secretName: swishkube-otel-collector-server-cert
+      optional: false
+      items:
+        - key: tls.key
+          path: tls.key
+  - name: &caCrt ca-crt
+    secret:
+      secretName: swishkube-otel-collector-server-cert
+      optional: false
+      items:
+        - key: ca.crt
+          path: ca.crt
+
+# This also supports template content, which will eventually be converted to yaml.
+extraVolumeMounts:
+  - name: *tlsCrt
+    mountPath: /certs/crt
+    readOnly: true
+  - name: *tlsKey
+    mountPath: /certs/key
+    readOnly: true
+  - name: *caCrt
+    mountPath: /certs/ca
+    readOnly: true

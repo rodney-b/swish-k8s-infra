@@ -1,0 +1,26 @@
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: operator
+deploy:
+  helm:
+    releases:
+      - name: strimzi-operator
+        namespace: swishkube-strimzi
+        createNamespace: true
+        remoteChart: oci://quay.io/strimzi-helm/strimzi-kafka-operator
+        version: "0.48.0"
+        valuesFiles:
+          - operator/values.yaml
+    flags:
+      upgrade:
+        - --install
+        - --reset-values
+    hooks:
+      before:
+        - host:
+            command:
+              - "sh"
+              - "-c"
+              - "kubectl create namespace swish-analytics || true"
+            os: [darwin, linux]

@@ -1,0 +1,30 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaNodePool
+metadata:
+  name: swish-analytics
+  namespace: swish-analytics
+  labels:
+    strimzi.io/cluster: swish-analytics
+spec:
+  replicas: 1
+  roles:
+    - controller
+    - broker
+  storage:
+    type: persistent-claim
+    size: 2Gi
+    class: ebs-gp3-sc
+    deleteClaim: false
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: "1Gi"
+  template:
+    pod:
+      tolerations:
+        - key: "CriticalAddonsOnly"
+          operator: "Equal"
+          value: "true"
+          effect: "NoSchedule"

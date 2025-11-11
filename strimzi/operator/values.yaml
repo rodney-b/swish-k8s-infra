@@ -1,0 +1,29 @@
+replicas: 1
+watchNamespaces:
+  - swish-analytics
+watchAnyNamespace: false
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsGroup: 1000
+  runAsUser: 1000
+  seccompProfile:
+    type: RuntimeDefault
+  capabilities:
+    drop:
+      - ALL
+
+podSecurityContext:
+  fsGroup: 1000
+  fsGroupChangePolicy: "OnRootMismatch"
+
+tolerations:
+  - key: "CriticalAddonsOnly"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+
+nodeSelector:
+  eks.amazonaws.com/nodegroup: bumpow-core-services

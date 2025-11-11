@@ -1,0 +1,74 @@
+# Root key for MinIO Tenant Chart
+tenant:
+  name: swish-analytics
+  # subPath must be empty manually. Otherwise it causes a volume mount error.
+  subPath: ""
+  certificate:
+    requestAutoCert: false
+    # This is used by MinIO to verify TLS connections from clients using those CAs
+    externalCaCertSecret:
+      - name: minio-server-ca
+        type: kubernetes.io/tls
+    # MinIO's server cert presented to clients
+    externalCertSecret:
+      - name: minio-server-tls
+        type: kubernetes.io/tls
+  features:
+    bucketDNS: false
+  buckets:
+    - name: swish-analytics
+      objectLock: true
+  ###
+  # Array of Kubernetes secrets from which the Operator generates MinIO users during tenant provisioning.
+  #
+  # Each secret should specify the ``CONSOLE_ACCESS_KEY`` and ``CONSOLE_SECRET_KEY`` as the access key and secret key for that user.
+  users:
+    - name: swish-analytics-user
+  logging:
+    json: true
+  pools:
+    - servers: 1
+      name: swish-analytics-pool-0
+      volumesPerServer: 1
+      size: 2Gi
+      storageClassName: ebs-gp3-sc
+      labels: &podLabels
+        swishkube.minio/component: cluster
+        swishkube.minio.cluster/owner: swish-analytics
+      tolerations:
+        - key: "CriticalAddonsOnly"
+          operator: "Equal"
+          value: "true"
+          effect: "NoSchedule"
+
+      nodeSelector:
+        eks.amazonaws.com/nodegroup: bumpow-core-services
+      topologySpreadConstraints:
+        - topologyKey: kubernetes.io/hostname
+          maxSkew: 1
+          whenUnsatisfiable: "ScheduleAnyway"
+          nodeAffinityPolicy: "Honor" 
+          nodeTaintsPolicy: "Honor"
+          labelSelector:
+            matchLabels:
+              <<: *podLabels
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          memory: "1Gi"
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: "OnRootMismatch"
+      containerSecurityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        runAsNonRoot: true
+        runAsGroup: 1000
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+        capabilities:
+          drop:
+            - ALL

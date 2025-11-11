@@ -1,0 +1,24 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: otel-collector-clickhouse-secrets
+  namespace: swish-analytics
+rules:
+  - apiGroups: [""] # "" = core API group
+    resources: ["secrets"]
+    resourceNames: ["otel-collector-clickhouse-users"]
+    verbs: ["get"] # (no list, watch, delete, etc.)
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: otel-collector-clickhouse-secrets-binding
+  namespace: swish-analytics
+subjects:
+  - kind: ServiceAccount
+    name: swishkube-otel-collector
+    namespace: swish-analytics
+roleRef:
+  kind: Role
+  name: otel-collector-clickhouse-secrets
+  apiGroup: rbac.authorization.k8s.io

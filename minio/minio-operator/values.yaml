@@ -1,0 +1,33 @@
+operator:
+  replicaCount: 1
+  env:
+    - name: OPERATOR_STS_AUTO_TLS_ENABLED
+      value: "off"
+    - name: OPERATOR_STS_ENABLED
+      value: "on"
+  resources:
+      limits:
+        cpu: 1
+        memory: 2Gi
+
+  additionalLabels: &podLabels
+    swishkube.wide.minio/component: operator
+
+  tolerations:
+    - key: "CriticalAddonsOnly"
+      operator: "Equal"
+      value: "true"
+      effect: "NoSchedule"
+
+  nodeSelector:
+    eks.amazonaws.com/nodegroup: bumpow-core-services
+
+  topologySpreadConstraints:
+    - topologyKey: kubernetes.io/hostname
+      maxSkew: 1
+      whenUnsatisfiable: "DoNotSchedule"
+      nodeAffinityPolicy: "Honor" 
+      nodeTaintsPolicy: "Honor"
+      labelSelector:
+        matchLabels:
+          <<: *podLabels

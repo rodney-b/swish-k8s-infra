@@ -1,0 +1,11 @@
+# Original whatever files (eg. original helm values.yaml for some chart)
+og.*
+
+# Hidden files
+.*
+!.github
+!.gitignore
+!.gitmodules
+
+# Skaffold
+skaffold.env

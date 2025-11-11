@@ -1,0 +1,8 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: swishkube-otel-collector
+  namespace: swish-analytics
+spec:
+  ca:
+    secretName: swishkube-otel-collector-ca-tls

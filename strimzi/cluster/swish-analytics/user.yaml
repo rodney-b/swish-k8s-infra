@@ -1,0 +1,60 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaUser
+metadata:
+  name: swishy
+  namespace: swish-analytics
+  labels:
+    strimzi.io/cluster: swish-analytics
+    kafka-user: swishy
+spec:
+  authentication:
+    type: tls
+  authorization:
+    type: simple
+    acls:
+      - type: allow
+        resource:
+          type: topic
+          name: data-set-
+          patternType: prefix
+        operations:
+          - Describe
+          - Read
+          - Write
+        host: "*"
+      - resource:
+          type: group
+          name: swish-test-consumer-group
+          patternType: literal
+        operations:
+          - Describe
+          - Read
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaUser
+metadata:
+  name: kafbat-ui
+  namespace: swish-analytics
+  labels:
+    strimzi.io/cluster: swish-analytics
+    kafka-user: kafbat-ui
+spec:
+  authentication:
+    type: tls
+  authorization:
+    type: simple
+    acls:
+      - type: allow
+        resource:
+          type: cluster
+        operations:
+          - All
+        host: "*"
+      - type: allow
+        resource:
+          type: topic
+          name: data-set-
+          patternType: prefix
+        operations:
+          - All
+        host: "*"

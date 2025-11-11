@@ -1,0 +1,18 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: kafka-broker-certificate
+  namespace: swish-analytics
+spec:
+  dnsNames:
+    # broker service
+    - "swish-analytics-kafka-brokers.swish-analytics.svc.cluster.local"
+    - "*.swish-analytics-kafka-brokers.swish-analytics.svc"
+    - "*.swish-analytics-kafka-brokers.swish-analytics.svc.cluster.local"
+    # bootstrap service
+    - "swish-analytics-kafka-bootstrap.swish-analytics.svc.cluster.local"
+    - "*.swish-analytics-kafka-bootstrap.swish-analytics.svc"
+    - "*.swish-analytics-kafka-bootstrap.swish-analytics.svc.cluster.local"
+  secretName: kafka-broker-tls
+  issuerRef:
+    name: kafka-ca-issuer

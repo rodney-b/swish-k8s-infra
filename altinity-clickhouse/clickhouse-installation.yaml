@@ -1,0 +1,76 @@
+apiVersion: "clickhouse.altinity.com/v1"
+kind: "ClickHouseInstallation"
+metadata:
+  name: swish-analytics
+  namespace: swish-analytics
+spec:
+  templates:
+    podTemplates:
+      - name: &podTemplate clickhouse-pod-template
+        spec:
+          containers:
+            - name: swish-analytics-clickhouse
+              image: clickhouse/clickhouse-server:25.7
+              volumeMounts:
+                - name: &storage swish-analytics-storage
+                  mountPath: /var/lib/clickhouse
+          tolerations:
+            - key: "ClickHouseObservabilityOnly"
+              operator: "Equal"
+              value: "true"
+              effect: "NoSchedule"
+          nodeSelector:
+            eks.amazonaws.com/nodegroup: bumpow-clickhouse-observability
+    volumeClaimTemplates:
+      - name: *storage
+        reclaimPolicy: Retain
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 50Gi
+          storageClassName: ebs-gp3-sc
+  configuration:
+    clusters:
+      - name: swishkube-obs
+        layout:
+          shardsCount: 1
+          replicasCount: 1
+        templates:
+          podTemplate: *podTemplate
+    users:
+      # admin
+      admin/password_sha256_hex:
+        valueFrom:
+          secretKeyRef:
+            name: clickhouse-users
+            key: admin
+      admin/grants/query:
+        - "GRANT ALL ON *.* WITH GRANT OPTION"
+
+      # otel
+      otel_exporter/password_sha256_hex:
+        valueFrom:
+          secretKeyRef:
+            name: clickhouse-users
+            key: otel_exporter
+      otel_exporter/grants/query:
+        - "GRANT ALTER, CREATE, DROP, INSERT, SELECT, SHOW, TRUNCATE ON otel.*"
+      otel_exporter/networks/ip:
+        - "::/0" # Allows connection from any IPv4 or IPv6 address
+
+      # hyperdx
+      hyperdx/password_sha256_hex:
+        valueFrom:
+          secretKeyRef:
+            name: clickhouse-users
+            key: hyperdx
+      hyperdx/grants/query:
+        - "GRANT SELECT, SHOW ON otel.*"
+        # For UI discovery features.
+        - "GRANT SHOW DATABASES, SHOW TABLES ON *.*"
+        - "GRANT SELECT, SHOW ON otel.*"
+        - "GRANT SELECT, SHOW ON system.*"
+      hyperdx/networks/ip:
+        - "::/0"

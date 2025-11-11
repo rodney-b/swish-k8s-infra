@@ -1,0 +1,69 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: Kafka
+metadata:
+  name: swish-analytics
+  namespace: swish-analytics
+spec:
+  kafka:
+    version: 4.1.0
+    metadataVersion: 4.1-IV1
+    listeners:
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+      - name: tls
+        port: 9093
+        type: internal
+        tls: true
+        authentication:
+          type: tls
+        configuration:
+          brokerCertChainAndKey:
+            secretName: kafka-broker-tls
+            certificate: tls.crt
+            key: tls.key
+    config:
+      offsets.topic.replication.factor: 1
+      transaction.state.log.replication.factor: 1
+      transaction.state.log.min.isr: 1
+      default.replication.factor: 1
+      min.insync.replicas: 1
+      auto.create.topics.enable: false
+    authorization:
+      type: simple
+    template:
+      pod:
+        tolerations:
+          - key: "CriticalAddonsOnly"
+            operator: "Equal"
+            value: "true"
+            effect: "NoSchedule"
+  kafkaExporter:
+    template:
+      pod:
+        tolerations:
+          - key: "CriticalAddonsOnly"
+            operator: "Equal"
+            value: "true"
+            effect: "NoSchedule"
+  entityOperator:
+    template:
+      pod:
+        tolerations:
+          - key: "CriticalAddonsOnly"
+            operator: "Equal"
+            value: "true"
+            effect: "NoSchedule"
+    # You configure the entityOperator property of the Kafka resource to include the topicOperator.
+    # By default, the Topic Operator watches for KafkaTopic resources in the namespace of the Kafka cluster deployed by the Cluster Operator.
+    # You can also specify a namespace using watchedNamespace in the Topic Operator spec.
+    # A single Topic Operator can watch a single namespace.
+    # One namespace should be watched by only one Topic Operator.
+    # ref: https://strimzi.io/docs/operators/latest/deploying#deploying-the-topic-operator-using-the-cluster-operator-str
+    topicOperator: {}
+    userOperator: {}
+
+    # tlsSidecar has been deprecated. It was used with Zookeeper.
+
+    # WARNING: Do not deploy more than one Kafka cluster into the same namespace. See ref docs for the "why?".

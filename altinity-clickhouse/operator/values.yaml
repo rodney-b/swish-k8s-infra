@@ -1,0 +1,75 @@
+nameOverride: &appName altinity-clickhouse-operator
+fullnameOverride: *appName
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: *appName
+
+operator:
+  containerSecurityContext:
+    privileged: false
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    seccompProfile:
+      type: RuntimeDefault
+  resources:
+   limits:
+     memory: 512Mi
+   requests:
+     cpu: 20m
+     memory: 64Mi
+  # operator.env -- additional environment variables for the clickhouse-operator container in deployment
+  # possible format value `[{"name": "SAMPLE", "value": "text"}]`
+  env: []
+
+metrics:
+  enabled: true
+  containerSecurityContext:
+    privileged: false
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    seccompProfile:
+      type: RuntimeDefault
+  resources:
+   limits:
+     memory: 384Mi
+   requests:
+     cpu: 20m
+     memory: 64Mi
+  # metrics.env -- additional environment variables for the deployment of metrics-exporter containers
+  # possible format value `[{"name": "SAMPLE", "value": "text"}]`
+  env: []
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  runAsGroup: 1001
+  fsGroup: 1001
+  fsGroupChangePolicy: OnRootMismatch
+
+podLabels: &podLabels
+  swishkube.observability.altinity-clickhouse/component: operator
+
+tolerations:
+  - key: "ClickHouseObservabilityOnly"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+
+nodeSelector:
+  eks.amazonaws.com/nodegroup: bumpow-clickhouse-observability
+
+topologySpreadConstraints:
+  - topologyKey: kubernetes.io/hostname
+    maxSkew: 1
+    whenUnsatisfiable: "DoNotSchedule"
+    nodeAffinityPolicy: "Honor" 
+    nodeTaintsPolicy: "Honor"
+    labelSelector:
+      matchLabels:
+        <<: *podLabels

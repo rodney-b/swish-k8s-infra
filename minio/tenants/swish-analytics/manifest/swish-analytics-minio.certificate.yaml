@@ -1,0 +1,18 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: minio-server-cert
+  namespace: swish-analytics
+spec:
+  dnsNames:
+    - "minio.swish-analytics"
+    - "minio.swish-analytics.svc"
+    - 'minio.swish-analytics.svc.cluster.local'
+    - '*.minio.swish-analytics.svc.cluster.local'
+    - '*.swish-analytics-hl.swish-analytics.svc.cluster.local'
+    - '*.swish-analytics.minio.swish-analytics.svc.cluster.local'
+    - '127.0.0.1'
+    - 'localhost'
+  secretName: minio-server-tls
+  issuerRef:
+    name: minio-ca-issuer

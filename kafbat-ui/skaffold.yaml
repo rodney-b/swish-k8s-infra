@@ -1,0 +1,32 @@
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: kafbat-ui
+deploy:
+  helm:
+    releases:
+      - name: kafbat-ui
+        namespace: swish-analytics
+        createNamespace: false
+        remoteChart: kafbat-ui/kafka-ui
+        version: "1.5.2"
+        valuesFiles:
+          - values.yaml
+    flags:
+      upgrade:
+        - --install
+        - --reset-values
+    hooks:
+      before:
+        - host:
+            command:
+              - "sh"
+              - "-c"
+              - "helm repo add kafbat-ui https://kafbat.github.io/helm-charts --force-update"
+            os: [darwin, linux]
+        - host:
+            command:
+              - "sh"
+              - "-c"
+              - "./pre-install.sh"
+            os: [darwin, linux]

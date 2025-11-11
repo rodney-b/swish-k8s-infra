@@ -1,0 +1,38 @@
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: fluent-bit
+deploy:
+  helm:
+    releases:
+      - name: fluent-bit
+        namespace: swish-analytics
+        createNamespace: true
+        remoteChart: fluent/fluent-bit
+        version: "0.53.0"
+        valuesFiles:
+          - values.yaml
+    flags:
+      upgrade:
+        - --install
+    hooks:
+      before:
+        - host:
+            command:
+              - "sh"
+              - "-c"
+              - "helm repo add fluent https://fluent.github.io/helm-charts --force-update"
+            os: [darwin, linux]
+        - host:
+            command:
+              - "sh"
+              - "-c"
+              - "./pre-install.sh"
+            os: [darwin, linux]
+      after:
+        - host:
+            command:
+              - "sh"
+              - "-c"
+              - "kubectl label --overwrite ns swish-analytics pod-security.kubernetes.io/enforce=privileged"
+            os: [darwin, linux]

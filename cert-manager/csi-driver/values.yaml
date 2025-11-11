@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=./values.schema.json
+
+metrics:
+  # Enable the metrics server on csi-driver pods.
+  # If false, the metrics server will be disabled and the other metrics fields below will be ignored.
+  enabled: false
+
+podLabels:
+  swishkube.cert-manager/component: csi-driver
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 1
+    memory: 1Gi
+
+tolerations:
+  - key: "CriticalAddonsOnly"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"

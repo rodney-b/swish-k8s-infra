@@ -1,0 +1,15 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: swishkube-fluent-bit-client
+  namespace: swish-analytics
+spec:
+  secretName: swishkube-fluent-bit-client-cert
+  dnsNames:
+    - 'swishkube-fluent-bit.swish-analytics.svc.cluster.local'
+  issuerRef:
+    name: swishkube-fluent-bit
+    kind: Issuer
+    group: cert-manager.io
+
+# Used for mTLS with the OTEL Collector

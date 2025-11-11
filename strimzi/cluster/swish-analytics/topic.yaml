@@ -1,0 +1,25 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: data-set-1
+  namespace: swish-analytics
+  labels:
+    strimzi.io/cluster: swish-analytics
+spec:
+  partitions: 1
+  replicas: 1
+  config:
+    retention.ms: 7200000 # 2 hours
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: data-set-2
+  namespace: swish-analytics
+  labels:
+    strimzi.io/cluster: swish-analytics
+spec:
+  partitions: 1
+  replicas: 1
+  config:
+    retention.ms: 7200000

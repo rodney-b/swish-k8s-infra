@@ -1,0 +1,92 @@
+creator: swishkube
+
+crds: 
+  enabled: true
+prometheus: 
+  enabled: false
+replicaCount: 3
+
+clusterResourceNamespace: "trust-manager"
+
+podLabels: &podLabels
+  swishkube.wide/component: cert-manager
+
+tolerations: &tolerations
+  - key: "CriticalAddonsOnly"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+
+nodeSelector: &nodeSelector
+  eks.amazonaws.com/nodegroup: bumpow-core-services
+
+topologySpreadConstraints:
+  - &topologySpreadConstraint
+    topologyKey: kubernetes.io/hostname
+    maxSkew: 1
+    whenUnsatisfiable: "DoNotSchedule"
+    nodeAffinityPolicy: "Honor" 
+    nodeTaintsPolicy: "Honor"
+    labelSelector:
+      matchLabels:
+        <<: *podLabels
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 1
+    memory: 1Gi
+
+webhook:
+  replicaCount: 3
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 1
+      memory: 1Gi
+  podLabels: &webhookLabels
+    swishkube.wide.cert-manager/component: webhook
+  tolerations: *tolerations
+  nodeSelector: *nodeSelector
+  topologySpreadConstraints:
+    - <<: *topologySpreadConstraint
+      labelSelector:
+        matchLabels:
+          <<: *webhookLabels
+
+cainjector: 
+  replicaCount: 3
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 1
+      memory: 1Gi
+  podLabels: &injectorLabels
+    swishkube.wide.cert-manager/component: cainjector
+  tolerations: *tolerations
+  nodeSelector: *nodeSelector
+  topologySpreadConstraints:
+    - <<: *topologySpreadConstraint
+      labelSelector:
+        matchLabels:
+          <<: *injectorLabels
+
+startupapicheck:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 1
+      memory: 1Gi
+  tolerations: *tolerations
+  nodeSelector: *nodeSelector
+
+# Note that the cert-manager helm chart expects this in string blocks but trust-manager in actual yaml objects
+#extraObjects: []

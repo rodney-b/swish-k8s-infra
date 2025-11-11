@@ -1,0 +1,63 @@
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: altinity-clickhouse-operator
+deploy:
+  helm:
+    releases:
+      - name: altinity-clickhouse-operator
+        namespace: swish-analytics
+        createNamespace: true
+        remoteChart: altinity-docs/altinity-clickhouse-operator
+        version: "0.25.2"
+        valuesFiles:
+          - operator/values.yaml
+    flags:
+      upgrade:
+        - --install
+    hooks:
+      before:
+        - host:
+            command:
+              - "sh"
+              - "-c"
+              - "helm repo add altinity-docs https://docs.altinity.com/clickhouse-operator --force-update"
+            os: [darwin, linux]
+---
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: altinity-clickhouse-installation
+manifests:
+  rawYaml:
+    - clickhouse-installation.yaml
+  hooks:
+    before:
+      - host:
+          command:
+            - "sh"
+            - "-c"
+            - "./pre-install.sh"
+          os: [darwin, linux]
+---
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: swish-analytics-snapshots
+build:
+  tagPolicy:
+    sha256: {}
+  local:
+    push: true
+    useBuildkit: true
+    concurrency: 1
+  artifacts:
+    - image:  "tinysrvr.bumpow.lan:5000/swish-analytics-snapshotter"
+      context: .
+      platforms:
+        - "linux/amd64"
+      docker:
+        dockerfile: snapshots/build/snapshotter/Dockerfile
+manifests:
+  rawYaml:
+    - snapshots/manifest/snapshots.yaml

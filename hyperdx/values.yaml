@@ -1,0 +1,87 @@
+global:
+  storageClassName: ebs-gp3-sc
+  keepPVC: true
+
+hyperdx:
+  replicas: 1
+  otelExporterEndpoint: "http://swishkube-otel-collector.swish-analytics.svc.cluster.local:4318"
+  env:
+    - name: DEFAULT_CONNECTIONS
+      valueFrom:
+        secretKeyRef:
+          name: hyperdx-clickhouse-connections
+          key: DEFAULT_CONNECTIONS
+  defaultConnections: ""
+  defaultSources: |
+    [
+      {
+        "from": {
+          "databaseName": "otel",
+          "tableName": "logs"
+        },
+        "kind": "log",
+        "name": "Logs",
+        "connection": "Cluster ClickHouse",
+        "metricSourceId": "Metrics"
+        "timestampValueExpression": "TimestampTime",
+        "displayedTimestampValueExpression": "Timestamp",
+        "implicitColumnExpression": "Body",
+        "serviceNameExpression": "ServiceName",
+        "bodyExpression": "Body",
+        "eventAttributesExpression": "LogAttributes",
+        "resourceAttributesExpression": "ResourceAttributes",
+        "defaultTableSelectExpression": "Timestamp,ServiceName,SeverityText,Body",
+        "severityTextExpression": "SeverityText",
+        "traceIdExpression": "TraceId",
+        "spanIdExpression": "SpanId",
+      },
+      {
+        "from": {
+          "databaseName": "otel"
+        },
+        "kind": "metric",
+        "name": "Metrics",
+        "connection": "Cluster ClickHouse"
+        "logSourceId": "Logs"
+        "metricTables": {
+          "gauge": "metrics_gauge",
+          "sum": "metrics_sum",
+          "histogram": "metrics_histogram",
+          "summary": "metrics_summary",
+          "exponential_histogram": "metrics_exp_histogram"
+        },
+      }
+    ]
+
+  podLabels:
+    swishkube.observability.hyperdx/component: hyperdx
+
+  tolerations:
+    - key: "ClickHouseObservabilityOnly"
+      operator: "Equal"
+      value: "true"
+      effect: "NoSchedule"
+  nodeSelector:
+    eks.amazonaws.com/nodegroup: bumpow-clickhouse-observability
+
+mongodb:
+  enabled: true
+  persistence:
+    enabled: true
+    dataSize: 10Gi
+  tolerations:
+    - key: "ClickHouseObservabilityOnly"
+      operator: "Equal"
+      value: "true"
+      effect: "NoSchedule"
+  nodeSelector:
+    eks.amazonaws.com/nodegroup: bumpow-clickhouse-observability
+
+clickhouse:
+  enabled: false
+
+otel:
+  enabled: false
+
+tasks:
+  enabled: false

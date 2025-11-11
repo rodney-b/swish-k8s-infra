@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=./values.schema.json
+replicaCount: 3
+
+nameOverride: &name swishkube-trust-manager
+serviceAccount:
+  name: *name
+
+app:
+  podLabels:
+    swishkube.wide.trust-manager/component: app
+  trust:
+    # The namespace used as the trust source. Note that the namespace _must_ exist
+    # before installing trust-manager.
+    namespace: trust-manager
+
+commonLabels: &podLabels
+  swishkube.wide/component: trust-manager
+
+tolerations:
+  - key: "CriticalAddonsOnly"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+
+nodeSelector:
+  eks.amazonaws.com/nodegroup: bumpow-core-services
+
+topologySpreadConstraints:
+  - topologyKey: kubernetes.io/hostname
+    maxSkew: 1
+    whenUnsatisfiable: "DoNotSchedule"
+    nodeAffinityPolicy: "Honor" 
+    nodeTaintsPolicy: "Honor"
+    labelSelector:
+      matchLabels:
+        <<: *podLabels
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 1
+    memory: 1Gi
+
+secretTargets:
+  enabled: true
+  authorizedSecrets:
+    - gitea-trust-bundle
+
+# Note that the trust-manager takes extraObjects in actual yaml objects but cert-manager expects them in string blocks
+# extraObjects: []
