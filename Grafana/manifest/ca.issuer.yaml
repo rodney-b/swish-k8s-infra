@@ -1,0 +1,8 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: swishkube-grafana-ca-issuer
+  namespace: swish-analytics
+spec:
+  ca:
+    secretName: swishkube-grafana-ca-tls

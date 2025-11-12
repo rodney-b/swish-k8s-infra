@@ -1,0 +1,99 @@
+replicas: 1
+
+testFramework:
+  enabled: false
+
+resources:
+ limits:
+   memory: 2Gi
+ requests:
+   cpu: 100m
+   memory: 128Mi
+
+tolerations:
+  - key: "CriticalAddonsOnly"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+
+
+## Enable persistence using Persistent Volume Claims
+## ref: https://kubernetes.io/docs/concepts/storage/persistent-volumes/
+##
+persistence:
+  type: pvc
+  enabled: true
+  storageClassName: ebs-gp3-sc
+  accessModes:
+    - ReadWriteOnce
+  size: 10Gi
+  annotations:
+    "helm.sh/resource-policy": keep
+  finalizers:
+    - kubernetes.io/pvc-protection
+
+adminUser: swishkubeadmin
+
+admin:
+  existingSecret: grafana-swishkube-admin-user
+  userKey: user
+  passwordKey: password
+
+plugins:
+  - grafana-clickhouse-datasource
+
+grafana.ini:
+  log:
+    mode: console
+    level: info
+    format: json
+  grafana_com:
+    url: https://grafana.com
+  server:
+    protocol: http
+
+envFromSecrets:
+  - name: "swishkube-grafana-ca-tls"
+    optional: false
+  - name: "clickhouse-users"
+    optional: false
+
+## Configure grafana datasources
+## ref: http://docs.grafana.org/administration/provisioning/#datasources
+##
+datasources:
+ datasources.yaml:
+   apiVersion: 1
+   datasources:
+    - name: ClickHouse
+      type: grafana-clickhouse-datasource
+      jsonData:
+        defaultDatabase: otel
+        port: "9000"
+        host: clickhouse-swish-analytics.swish-analytics.svc.cluster.local
+        username: grafana
+        tlsSkipVerify: "true"
+        tlsAuth: "false"
+        tlsAuthWithCACert: "false"
+        secure: "false"
+        protocol: native
+        dialTimeout: "5"
+        queryTimeout: "60"
+        logs:
+          defaultDatabase: otel
+          defaultTable: logs
+          otelEnabled: "true"
+          otelVersion: "1.49.0"
+          timeColumn: TimestampTime
+          levelColumn: SeverityText
+          messageColumn: Body
+      secureJsonData:
+        password: ${grafana_plain}
+        tlsCACert: ${ca.crt}
+        tlsClientCert: ${tls.crt}
+        tlsClientKey: ${tls.key}
+
+dashboardsConfigMaps: {}
+revisionHistoryLimit: 10
+
+assertNoLeakedSecrets: true

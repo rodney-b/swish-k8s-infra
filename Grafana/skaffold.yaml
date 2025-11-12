@@ -1,0 +1,31 @@
+apiVersion: skaffold/v4beta13
+kind: Config
+metadata:
+  name: grafana
+deploy:
+  helm:
+    releases:
+      - name: swishkube-grafana
+        namespace: swish-analytics
+        createNamespace: true
+        remoteChart: grafana/grafana
+        version: "10.0.0"
+        valuesFiles:
+          - values.yaml
+    flags:
+      upgrade:
+        - --install
+    hooks:
+      before:
+        - host:
+            command:
+              - "sh"
+              - "-c"
+              - "helm repo add grafana https://grafana.github.io/helm-charts"
+            os: [darwin, linux]
+        - host:
+            command:
+              - "sh"
+              - "-c"
+              - "./pre-install.sh"
+            os: [darwin, linux]

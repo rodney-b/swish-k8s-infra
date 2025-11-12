@@ -74,3 +74,18 @@ spec:
         - "GRANT SELECT, SHOW ON system.*"
       hyperdx/networks/ip:
         - "::/0"
+
+      # grafana
+      grafana/password_sha256_hex:
+        valueFrom:
+          secretKeyRef:
+            name: clickhouse-users
+            key: grafana
+      grafana/grants/query:
+        - "GRANT SELECT, SHOW ON otel.*"
+        # For UI discovery features.
+        - "GRANT SHOW DATABASES, SHOW TABLES ON *.*"
+        - "GRANT SELECT, SHOW ON otel.*"
+        - "GRANT SELECT, SHOW ON system.*"
+      grafana/networks/ip:
+        - "::/0"

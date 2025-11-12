@@ -158,9 +158,6 @@ tolerations:
     value: "true"
     effect: "NoSchedule"
 
-nodeSelector:
-  eks.amazonaws.com/nodegroup: bumpow-core-services
-
 topologySpreadConstraints:
   - topologyKey: kubernetes.io/hostname
     maxSkew: 1
