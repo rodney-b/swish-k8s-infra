@@ -20,6 +20,5 @@ spec:
             port:
               number: 3000
 
-# Because I had trouble using the Gateway API with the aws load balancer controller for
-# internet facing traffic.
+# Tried to do it with Gateway API but ran into trouble with the aws load balancer controller
 # This issue remains open: https://github.com/kubernetes-sigs/aws-load-balancer-controller/issues/1338 
