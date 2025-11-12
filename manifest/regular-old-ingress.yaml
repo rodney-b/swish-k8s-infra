@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hyperdx-public
+  namespace: swish-analytics
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
+spec:
+  ingressClassName: alb
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: hyperdx-hdx-oss-v2-app
+            port:
+              number: 3000
+
+# Because I had trouble using the Gateway API with the aws load balancer controller for
+# internet facing traffic.
+# This issue remains open: https://github.com/kubernetes-sigs/aws-load-balancer-controller/issues/1338 

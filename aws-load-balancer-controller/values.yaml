@@ -1,0 +1,25 @@
+region: us-east-1
+vpcId: vpc-014d343de3bb1c5cf
+clusterName: bumpow-main
+
+serviceAccount:
+  create: false
+  name: aws-load-balancer-controller
+
+controllerConfig:
+  # featureGates set of key: value pairs that describe AWS load balance controller features
+  featureGates:
+    ALBGatewayAPI: true
+    NLBGatewayAPI: true
+  # ListenerRulesTagging: true
+  # WeightedTargetGroups: true
+  # ServiceTypeLoadBalancerOnly: false
+  # EndpointsFailOpen: true
+  # EnableServiceController: true
+  # EnableIPTargetType: true
+  # SubnetsClusterTagCheck: true
+  # NLBHealthCheckAdvancedConfig: true
+  # ALBSingleSubnet: false
+  # LBCapacityReservation: true
+  # AGAController: true
+  # EnhancedDefaultBehavior: false
